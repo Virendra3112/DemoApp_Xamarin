@@ -1,6 +1,8 @@
-﻿using System;
+﻿using DemoAppXamarin.Helpers;
+using DemoAppXamarin.PageModels;
+using DemoAppXamarin.WebServices;
+using FreshMvvm;
 using Xamarin.Forms;
-using Xamarin.Forms.Xaml;
 
 namespace DemoAppXamarin
 {
@@ -10,7 +12,22 @@ namespace DemoAppXamarin
         {
             InitializeComponent();
 
-            MainPage = new MainPage();
+            RegisterServices();
+
+            var landingPageModel = FreshMvvm.FreshPageModelResolver.ResolvePageModel<LandingPageModel>();
+            var loginContainer = new FreshNavigationContainer(landingPageModel, "LandingPage");
+            var myPitchListViewContainer = new FreshTabbedNavigationContainer("UserListPage");
+
+
+            if (!AppSettings.IsUserLoggedIn)
+            {
+                MainPage = loginContainer;
+            }
+
+            else
+            {
+                StaticHelper.InitializeAndShowMasterDetailPage();
+            }
         }
 
         protected override void OnStart()
@@ -23,6 +40,11 @@ namespace DemoAppXamarin
 
         protected override void OnResume()
         {
+        }
+
+        private void RegisterServices()
+        {
+            FreshIOC.Container.Register<IWebService, WebService>();
         }
     }
 }
