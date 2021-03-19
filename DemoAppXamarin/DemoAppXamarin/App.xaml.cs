@@ -2,6 +2,7 @@
 using DemoAppXamarin.PageModels;
 using DemoAppXamarin.WebServices;
 using FreshMvvm;
+using MonkeyCache.FileStore;
 using Xamarin.Forms;
 
 namespace DemoAppXamarin
@@ -18,16 +19,11 @@ namespace DemoAppXamarin
             var loginContainer = new FreshNavigationContainer(landingPageModel, "LandingPage");
             var myPitchListViewContainer = new FreshTabbedNavigationContainer("UserListPage");
 
+            Barrel.ApplicationId = "CachingDataSample";
 
-            if (!AppSettings.IsUserLoggedIn)
-            {
-                MainPage = loginContainer;
-            }
 
-            else
-            {
-                StaticHelper.InitializeAndShowMasterDetailPage();
-            }
+            MainPage = loginContainer;
+
         }
 
         protected override void OnStart()

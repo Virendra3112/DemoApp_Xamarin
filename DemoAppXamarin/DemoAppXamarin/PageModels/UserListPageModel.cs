@@ -1,9 +1,12 @@
 ﻿using DemoAppXamarin.Helpers;
 using DemoAppXamarin.Models;
 using DemoAppXamarin.WebServices;
+using MonkeyCache.FileStore;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace DemoAppXamarin.PageModels
@@ -65,7 +68,14 @@ namespace DemoAppXamarin.PageModels
         {
             base.ViewIsAppearing(sender, e);
 
-            await GetUserDataAsync();
+            if (AppSettings.IsDataDownloaded)
+            {
+                await GetOfflineDataAsync();
+            }
+            else
+            {
+                await GetUserDataAsync();
+            }
         }
 
         protected override void ViewIsDisappearing(object sender, EventArgs e)
@@ -85,18 +95,22 @@ namespace DemoAppXamarin.PageModels
                 {
                     var _apiResult = await _webService.GetData<UserData>(APIEndPoints.NamesUri);
 
-                    var userData = JsonConvert.DeserializeObject<UserData>(_apiResult);
+                    if (_apiResult != null)
+                    {
+                        var userData = JsonConvert.DeserializeObject<UserData>(_apiResult);
 
-                    PersonList = new ObservableCollection<Person>(userData.People);
+                        if (userData != null && userData.People.Any())
+                        {
+                            PersonList = new ObservableCollection<Person>(userData.People);
 
+                            SaveDataToLocalCache();
+                        }
+                    }
                 }
-
                 else
                 {
                     await CoreMethods.DisplayAlert("Error", "No Internet", "Ok");
                 }
-
-
             }
             catch (Exception ex)
             {
@@ -104,6 +118,37 @@ namespace DemoAppXamarin.PageModels
             }
 
             finally { IsBusy = false; }
+        }
+
+
+        private async Task GetOfflineDataAsync()
+        {
+            try
+            {
+                var _persons = Barrel.Current.Get<IEnumerable<Person>>(key: "Persons");
+
+                PersonList = new ObservableCollection<Person>(_persons);
+
+            }
+            catch (Exception ex)
+            {
+                await CoreMethods.DisplayAlert("Error", "Something went wrong.", "Ok");
+            }
+
+        }
+
+        private void SaveDataToLocalCache()
+        {
+            try
+            {
+                Barrel.Current.Add(key: "Persons", data: PersonList, expireIn: TimeSpan.FromDays(100));
+                AppSettings.IsDataDownloaded = true;
+            }
+            catch (Exception ex)
+            {
+                CoreMethods.DisplayAlert("Error", "Something went wrong.", "Ok");
+            }
+
         }
         #endregion
 
